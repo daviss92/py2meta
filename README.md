@@ -1,5 +1,5 @@
-# py2meta
-A python2 wrapper for Phil Harvey's Exiftool.
+# py3meta
+A python 3 wrapper for Phil Harvey's Exiftool.
 
 ## Prerequisites
 
