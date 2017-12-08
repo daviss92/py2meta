@@ -15,27 +15,27 @@ Currently under construction
 
 All read functions require a return type. Specify 'string', 'list', or 'dict'. If left out, default is 'string'.
 
-# all_contains
+### all_contains
 
 `all_contains()` allows you to output all metadata within a given file that contains a particular string.
 
-# all_data
+### all_data
 
 `all_data()` allows you to output all metadata within a given file.
 
-# all_duplicates
+### all_duplicates
 
 `all_duplicates()` outputs all metadata, including any duplicate tags.
 
-# common
+### common
 
 `common()` allows you to output all common metadata information.
 
-# keywords
+### keywords
 
 `keywords()` outputs keywords within a given file.
 
-# custom
+### custom
 
 `all_contains()` allows you to read any metadata specified by custom arguments input by the user.
 
