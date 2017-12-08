@@ -83,15 +83,23 @@ def _cleanup_data( data, datatype ):
 	return x
 
 
+def _generate_cmd( ):
+	"""not in use"""
+	pass
+
+
 def _run_command( cmd ):
 	proc = subprocess.Popen( cmd, stdout=subprocess.PIPE, shell=True )
 	output, err = proc.communicate()
 	proc.wait()
 
-	return output.decode('utf-8')
+	return str(output, 'UTF-8', 'ignore')
 
 
 def _verify_file( c, f ):
+	if not pathlib.Path( f ).is_file():
+		return ( "{} is not a valid file." ).format( f )
+
 	if c == "create":
 		formats = _create_formats
 	elif c == "read":
@@ -99,21 +107,17 @@ def _verify_file( c, f ):
 	else:
 		formats = _write_formats
 
-	extension = pathlib.Path( f ).suffix[1:]
-
-	if not any( extension.upper() in x for x in formats ):
-		raise RuntimeError( ("{} is not a valid file type to {}.").format( f, c ) )
+	if not any( pathlib.Path( f ).suffix[1:].upper() in x for x in formats ):
+		return ("{} is not a valid file type to {}.").format( f, c )
 
 	try:
 		fp = open( f )
 	except IOError as e:
-		print(e)
-		raise RuntimeError(
-			("You do not have permissions to {} the file {}." ).format( c, f ))
+		return ("You do not have permissions to {} the file {}.").format( c, f )
 	else:
 		fp.close()
 
-	return
+	return True
 
 
 def _verify_installation( x ):
@@ -142,8 +146,7 @@ def _verify_installation( x ):
 		print ( e )
 		raise RuntimeError( "Running this requires exiftool installed." )
 	else:
-		if any( a in str( results[0] ) for a in ["command not found",
-		"is not recognized"] ):
+		if any( a in str( results ) for a in ["command not found", "is not recognized"] ):
 			raise RuntimeError( "Running this requires exiftool installed." )
 
 	return cmd
@@ -153,6 +156,7 @@ class py3exifcopy( object ):
 	def __init__( self, path=None, overwrite=False ):
 		self.exiftool = _verify_installation( path )
 		self.overwrite = overwrite
+
 
 	def _check_sidecar( self, sidecar ):
 		if sidecar is None:
@@ -165,17 +169,21 @@ class py3exifcopy( object ):
 
 		return result
 
+
 	def all( self, args, sidecar=None ):
 		"""exiftool -tagsfromfile file.ext -all:all output.ext"""
 		pass
+
 
 	def all_iptc( self, args, sidecar=None ):
 		"""exiftool -tagsfromfile file.ext -iptc:all output.ext"""
 		pass
 
+
 	def all_xmp( self, args, sidecar=None ):
 		"""exiftool -tagsfromfile file.ext -xmp:all output.ext"""
 		pass
+
 
 	def custom( self, args ):
 		"""custom arguments"""
@@ -186,30 +194,86 @@ class py3exifread( object ):
 	def __init__( self, path=None ):
 		self.exiftool = _verify_installation( path )
 
-	def all( self, filepath ):
-		"""exiftool x.ext"""
-		pass
 
-	def all_contains( self, terms, filepath ):
-		"""exiftool "-*resolution*" image.jpg"""
-		pass
+	def all_contains( self, terms, filepath, datatype="string" ):
+		valid = _verify_file( "read", filepath )
 
-	def all_duplicates( self, filepath ):
-		"""exiftool -a -u -g1 a.jpg"""
-		pass
-
-	def common( self, filepath, datatype ):
-		_verify_file( "read", filepath )
-
-		cmd = '"{}" -common "{}"'.format( self.exiftool, filepath )
-		results = _run_command( cmd )
-		data = _cleanup_data( results, datatype )
+		if valid == True:
+			cmd = '"{}" "-*{}*" "{}"'.format( self.exiftool, terms, filepath )
+			results = _run_command( cmd )
+			data = _cleanup_data( results, datatype )
+		else:
+			return valid
 
 		return data
 
-	def custom( self, args, filepath ):
-		"""custom arguments"""
-		pass
+
+	def all_data( self, filepath, datatype="string" ):
+		valid = _verify_file( "read", filepath )
+
+		if valid == True:
+			cmd = '"{}" "{}"'.format( self.exiftool, filepath )
+			results = _run_command( cmd )
+			data = _cleanup_data( results, datatype )
+		else:
+			return valid
+
+		return data
+
+
+	def all_duplicates( self, filepath, datatype="string" ):
+		valid = _verify_file( "read", filepath )
+
+		if valid == True:
+			cmd = '"{}" -a -u "{}"'.format( self.exiftool, filepath )
+			results = _run_command( cmd )
+			data = _cleanup_data( results, datatype )
+		else:
+			return valid
+
+		return data
+
+
+	def common( self, filepath, datatype="string" ):
+		valid = _verify_file( "read", filepath )
+
+		if valid == True:
+			cmd = '"{}" -common "{}"'.format( self.exiftool, filepath )
+			results = _run_command( cmd )
+			data = _cleanup_data( results, datatype )
+		else:
+			return valid
+
+		return data
+
+
+	def keywords( self, filepath, datatype="string" ):
+		valid = _verify_file( "read", filepath )
+
+		if valid == True:
+			cmd = '"{}" -keywords "{}"'.format( self.exiftool, filepath )
+			results = _run_command( cmd )
+			data = _cleanup_data( results, datatype )
+		else:
+			return valid
+
+		return data
+
+
+	def custom( self, args, filepath, datatype="string" ):
+		valid = _verify_file( "read", filepath )
+
+		if args == None:
+			return "Invalid Arguments"
+
+		if valid == True:
+			cmd = '"{}" {} "{}"'.format( self.exiftool, args, filepath )
+			results = _run_command( cmd )
+			data = _cleanup_data( results, datatype )
+		else:
+			return valid
+
+		return data
 
 
 class py3exifwrite( object ):
@@ -218,9 +282,11 @@ class py3exifwrite( object ):
 		self.exiftool = path
 		self.overwrite = overwrite
 
+
 	def keywords( self, data="append" ):
 		"""exiftool -iptc:keywords+="""
 		pass
+
 
 	def custom( self ):
 		"""custom arguments"""
